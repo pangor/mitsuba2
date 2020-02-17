@@ -67,6 +67,7 @@ public:
     LinearPolarizer(const Properties &props) : Base(props) {
         m_theta = props.texture<Texture>("theta", 0.f);
         m_transmittance = props.texture<Texture>("transmittance", 1.f);
+        m_polarizing = props.bool_("polarizing", true);
 
         m_flags = BSDFFlags::FrontSide | BSDFFlags::BackSide | BSDFFlags::Null;
         m_components.push_back(m_flags);
@@ -87,6 +88,10 @@ public:
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
 
         if constexpr (is_polarized_v<Spectrum>) {
+            if (!m_polarizing) {
+                return { bs, mueller::absorber(0.5f*transmittance) };
+            }
+
             // Query rotation angle
             UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
 
@@ -135,6 +140,10 @@ public:
 
         UnpolarizedSpectrum transmittance = m_transmittance->eval(si, active);
         if constexpr (is_polarized_v<Spectrum>) {
+            if (!m_polarizing) {
+                return mueller::absorber(0.5f*transmittance);
+            }
+
             // Query rotation angle
             UnpolarizedSpectrum theta = deg_to_rad(m_theta->eval(si, active));
 
@@ -184,6 +193,7 @@ public:
 
     MTS_DECLARE_CLASS()
 private:
+    bool m_polarizing;
     ref<Texture> m_theta;
     ref<Texture> m_transmittance;
 };
